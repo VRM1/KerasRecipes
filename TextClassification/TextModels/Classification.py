@@ -79,7 +79,7 @@ def StackedLSTMmodel(n_outputs,vocab_sz,emb_sz,embedding_matrix,n_timesteps):
         l_1 = Bidirectional(GRU(hid_sz, return_sequences=True, activation='relu'))(e)
         l_2 = Bidirectional(GRU(hid_sz, return_sequences=True, activation='relu'))(l_1)
     else:
-        l_1 = Bidirectional(CuDNNGRU(hid_sz, return_sequences=True))(x)
+        l_1 = Bidirectional(CuDNNGRU(hid_sz, return_sequences=True))(e)
         l_2 = Bidirectional(CuDNNGRU(hid_sz, return_sequences=True))(l_1)
     l_3 = TimeDistributed(Dense(100, activation='relu'))(l_2)
     l_4 = Flatten()(l_3)
