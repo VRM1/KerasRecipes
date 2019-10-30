@@ -8,6 +8,7 @@ from keras.models import Model
 from keras.utils import plot_model
 from keras import backend as K
 '''
+The codes here partly borrowed and modified from the following references
 References:
 1. https://machinelearningmastery.com/use-word-embedding-layers-deep-learning-keras/
 '''
