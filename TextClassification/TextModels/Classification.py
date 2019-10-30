@@ -27,7 +27,7 @@ def SimpleLstm(n_outputs,vocab_sz,emb_sz,embedding_matrix,n_timesteps):
     if DEVICE == 'CPU':
         l_1 = Bidirectional(GRU(100,activation='relu'))(e)
     if DEVICE == 'GPU':
-        l_1 = Bidirectional(CuDNNGRU(100, activation='relu',))(e)
+        l_1 = Bidirectional(CuDNNGRU(100))(e)
     l_2 = Dropout(0.2)(l_1)
     l_3 = Dense(100, activation='relu')(l_2)
     l_4 = Dense(n_outputs, activation='sigmoid')(l_3)
