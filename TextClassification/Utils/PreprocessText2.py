@@ -6,6 +6,7 @@ from nltk.tokenize import word_tokenize
 import pandas as pd
 from string import punctuation
 from tqdm import tqdm
+
 '''for the following model see: do pip install contractions 
 (see https://github.com/kootenpv/contractions) and do pip install textsearch
 since, there is no nltk module for contractions.
@@ -19,14 +20,41 @@ import numpy as np
 import multiprocessing
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-import json
+from gensim.models import KeyedVectors
+from gensim.test.utils import get_tmpfile, datapath
+from gensim.scripts.glove2word2vec import glove2word2vec
+import logging
+
 '''
 A generic function to process all textual data
 '''
 F_PTH = '<PathToGloveEmbeddings>'
 FIL_N = 'glove.6B.200d.txt'
+word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
+WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
+glove_file = datapath(F_PTH + FIL_N)
+word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
+glove2word2vec(glove_file, word2vec_glove_file)
+WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
 
-def __textOperations(text):
+
+def MeanEmbeddingVectorizer(docs):
+    # glove_mean_vec_tr = MeanEmbeddingVectorizer(glove_WORD_MODEL)
+    # WORD_MODEL = glove_mean_vec_tr.transform(docs)
+
+    vector_size = WORD_MODEL.wv.vector_size
+    doc_vecs = []
+    for word in docs:
+        if word in WORD_MODEL.wv.vocab:
+            doc_vecs.append(WORD_MODEL.wv.get_vector(word))
+
+    if not doc_vecs:  # empty words
+        doc_vecs.append(np.zeros(vector_size))
+
+    return np.array(doc_vecs).mean(axis=0)
+
+
+def __textOperations(text,typ):
     lmtzr = WordNetLemmatizer()
     # start by removing contractions
     text = contractions.fix(text)
@@ -36,25 +64,33 @@ def __textOperations(text):
     tokens = [x for x in tokens if x not in punctuation]
     tokens = [lmtzr.lemmatize(x) for x in tokens]
     tokens = [x for x in tokens if x not in stopwords.words('english')]
+    if typ == 'word2vec averaging':
+        tokens = MeanEmbeddingVectorizer(tokens)
     doc_len = len(tokens)
-    return (' '.join(tokens),doc_len)
+    return (' '.join(tokens), doc_len)
 
-def PurifyText(df,field):
 
-    p = multiprocessing.Pool(8)
+def PurifyText(df, field, typ):
+    cpus = multiprocessing.cpu_count()
+    p = multiprocessing.Pool(cpus)
     mx_doc_len = 0
-    vals = list(tqdm(p.imap(__textOperations, df[field]),total=len(df)))
-    for v,l in vals:
-        mx_doc_len = max(mx_doc_len,l)
+    vals = list(tqdm(p.starmap(__textOperations, df[field], typ), total=len(df)))
+
+    for v, l in vals:
+        mx_doc_len = max(mx_doc_len, l)
     vals = [v[0] for v in vals]
-    df[field+'_a'] = pd.DataFrame(vals)
-    df.drop(field,axis=1,inplace=True)
-    df.rename({field+'_a':field}, axis='columns',inplace=True)
-    return (df,mx_doc_len)
+    if typ == 'word2vec averaging':
+        return (np.array(vals), mx_doc_len)
+
+    df[field + '_a'] = pd.DataFrame(vals)
+    df.drop(field, axis=1, inplace=True)
+    df.rename({field + '_a': field}, axis='columns', inplace=True)
+    return (df, mx_doc_len)
+
 
 class Embeddings:
 
-    def __init__(self,typ):
+    def __init__(self, typ):
 
         self.embeddings_index = dict()
         # size of the embeddings
@@ -66,7 +102,7 @@ class Embeddings:
 
         # we now start load the whole embedding into memory and selecting only those embeddings that correspond to our input vocabulary.
 
-        f = open(F_PTH+FIL_N)
+        f = open(F_PTH + FIL_N)
         for line in f:
             values = line.split()
             word = values[0]
@@ -75,7 +111,7 @@ class Embeddings:
         self.embed_sz = len(self.embeddings_index[word])
         f.close()
 
-    def getEmbeddings(self,X,mx_len):
+    def getEmbeddings(self, X, mx_len):
 
         '''
         :param X: the raw text after some pre-processing
@@ -97,5 +133,4 @@ class Embeddings:
             if embedding_vector is not None:
                 embedding_matrix[i] = embedding_vector
 
-        return(padded_docs,embedding_matrix,self.embed_sz,vocab_size)
-
+        return (padded_docs, embedding_matrix, self.embed_sz, vocab_size)
