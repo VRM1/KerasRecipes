@@ -8,11 +8,10 @@ import numpy as np
 
 if __name__  == '__main__':
 
-    pth = '<pathToFile>'
-    fil = '<file>.csv'
+    pth = '/home/vineeth/Documents/DataRepo/PatentClassification/'
+    fil = 'PatentsOrangeData.csv'
     # the name of the field for which you want to apply pre-processing
-    field = '<Name of the text field>'
-    req_fields = ['<Name of the text field>','label']
+    req_fields = ['Description','label']
     cnt = 0
     verbose = 0
     batch_sz = 64
@@ -21,10 +20,10 @@ if __name__  == '__main__':
     accuracies = []
     typ = 'glove'
     df = pd.read_csv(pth+fil)[req_fields]
-    vals = PurifyText(df,field)
-    df,mx_doc_len = vals[0],vals[1]
+    vals = PurifyText(df,req_fields[0])
+    X,mx_doc_len = vals[0],vals[1]
     n_outputs = 1
-    X, Y = df['<Name of the text field>'].values, df['label'].values
+    Y = df[req_fields[-1]].values
     kf = KFold(n_splits=folds, shuffle=True)
     kf.get_n_splits(X)
     embed = Embeddings(typ)
@@ -44,7 +43,7 @@ if __name__  == '__main__':
         callbcks_list = [ModelCheckpoint(filepath=weights_path, verbose=1, monitor='val_loss', mode='min',\
                           save_best_only=True),EarlyStopping(monitor='val_loss', mode='min',patience=5)]
         print('traning fold:{}'.format(cnt))
-        model = StackedLSTMmodel(n_outputs,vocab_sz,emb_sz,emb_matrix,mx_doc_len)
+        model = MLP(n_outputs,vocab_sz,emb_sz,emb_matrix,mx_doc_len)
         model.fit(padded_X_train, Y_train, epochs=epochs, batch_size=batch_sz,callbacks=callbcks_list,\
               validation_data=(padded_X_valid, Y_valid),verbose=verbose)
 

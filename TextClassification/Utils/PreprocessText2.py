@@ -28,11 +28,10 @@ import logging
 '''
 A generic function to process all textual data
 '''
-F_PTH = '<PathToGloveEmbeddings>'
-FIL_N = 'glove.6B.200d.txt'
-word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
-WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
-glove_file = datapath(F_PTH + FIL_N)
+F_PTH = '/home/vineeth/Documents/DataRepo/PretrainedEmbeddings/'
+FIL_A = 'Glove/glove.6B/glove.6B.300d.txt'
+FIL_B = 'PatentToGlove-'
+glove_file = datapath(F_PTH + FIL_A)
 word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
 glove2word2vec(glove_file, word2vec_glove_file)
 WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
@@ -85,7 +84,7 @@ def PurifyText(df, field, typ):
     df[field + '_a'] = pd.DataFrame(vals)
     df.drop(field, axis=1, inplace=True)
     df.rename({field + '_a': field}, axis='columns', inplace=True)
-    return (df, mx_doc_len)
+    return (vals, mx_doc_len)
 
 
 class Embeddings:
