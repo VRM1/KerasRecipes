@@ -54,12 +54,25 @@ def TemporalWeightLstm(n_outputs,vocab_sz,emb_sz,embedding_matrix,n_timesteps):
     plot_model(model, to_file='figure.png',show_shapes=True)
     return model
 
-def MLP(n_outputs,vocab_sz,emb_sz,embedding_matrix,n_timesteps):
+def EmbedMLP(n_outputs,vocab_sz,emb_sz,embedding_matrix,n_timesteps):
 
     x = Input(shape=(n_timesteps,))
     e = Embedding(vocab_sz, emb_sz, weights=[embedding_matrix], input_length=n_timesteps, trainable=True)(x)
     e = Flatten()(e)
     l_1 = Dense(100, activation='relu',kernel_initializer='normal')(e)
+    l_2 = Dropout(0.2)(l_1)
+    l_3 = Dense(100, activation='relu',kernel_initializer='normal')(l_2)
+    l_4 = Dropout(0.2)(l_3)
+    y = Dense(n_outputs, activation='sigmoid',kernel_initializer='normal')(l_4)
+    model = Model(inputs=x, outputs=y)
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+    plot_model(model,to_file='SimpleMLP.png',show_shapes=True)
+    return model
+
+def SimpleMLP(i_dim,n_outputs):
+
+    x = Input(shape=(i_dim,))
+    l_1 = Dense(100, activation='relu',kernel_initializer='normal')(x)
     l_2 = Dropout(0.2)(l_1)
     l_3 = Dense(100, activation='relu',kernel_initializer='normal')(l_2)
     l_4 = Dropout(0.2)(l_3)

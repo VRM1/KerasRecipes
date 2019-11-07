@@ -2,3 +2,8 @@ This repository contains simple models for text classification using Deep Learni
 
 
 1.
+
+Results:
+
+Technique,  Accuracy, Model
+Word2Vec averaging, 84%, SimpleMLP

@@ -36,55 +36,61 @@ word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
 glove2word2vec(glove_file, word2vec_glove_file)
 WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
 
+class PurifyText:
 
-def MeanEmbeddingVectorizer(docs):
-    # glove_mean_vec_tr = MeanEmbeddingVectorizer(glove_WORD_MODEL)
-    # WORD_MODEL = glove_mean_vec_tr.transform(docs)
+    def __init__(self,typ):
+        self.typ = typ
 
-    vector_size = WORD_MODEL.wv.vector_size
-    doc_vecs = []
-    for word in docs:
-        if word in WORD_MODEL.wv.vocab:
-            doc_vecs.append(WORD_MODEL.wv.get_vector(word))
+    def __MeanEmbeddingVectorizer(self,docs):
+        # glove_mean_vec_tr = MeanEmbeddingVectorizer(glove_WORD_MODEL)
+        # WORD_MODEL = glove_mean_vec_tr.transform(docs)
 
-    if not doc_vecs:  # empty words
-        doc_vecs.append(np.zeros(vector_size))
+        vector_size = WORD_MODEL.wv.vector_size
+        doc_vecs = []
+        for word in docs:
+            if word in WORD_MODEL.wv.vocab:
+                doc_vecs.append(WORD_MODEL.wv.get_vector(word))
 
-    return np.array(doc_vecs).mean(axis=0)
+        if not doc_vecs:  # empty words
+            doc_vecs.append(np.zeros(vector_size))
 
-
-def __textOperations(text,typ):
-    lmtzr = WordNetLemmatizer()
-    # start by removing contractions
-    text = contractions.fix(text)
-    # tokenizes the sentence by considering only alpha numeric characters
-    tokens = word_tokenize(text)
-    tokens = [x.lower() for x in tokens]
-    tokens = [x for x in tokens if x not in punctuation]
-    tokens = [lmtzr.lemmatize(x) for x in tokens]
-    tokens = [x for x in tokens if x not in stopwords.words('english')]
-    if typ == 'word2vec averaging':
-        tokens = MeanEmbeddingVectorizer(tokens)
-    doc_len = len(tokens)
-    return (' '.join(tokens), doc_len)
+        return np.array(doc_vecs).mean(axis=0)
 
 
-def PurifyText(df, field, typ):
-    cpus = multiprocessing.cpu_count()
-    p = multiprocessing.Pool(cpus)
-    mx_doc_len = 0
-    vals = list(tqdm(p.starmap(__textOperations, df[field], typ), total=len(df)))
+    def textOperations(self, text):
+        lmtzr = WordNetLemmatizer()
+        # start by removing contractions
+        text = contractions.fix(text)
+        # tokenizes the sentence by considering only alpha numeric characters
+        tokens = word_tokenize(text)
+        tokens = [x.lower() for x in tokens]
+        tokens = [x for x in tokens if x not in punctuation]
+        tokens = [lmtzr.lemmatize(x) for x in tokens]
+        tokens = [x for x in tokens if x not in stopwords.words('english')]
+        if self.typ == 'word2vec averaging':
+            tokens = self.__MeanEmbeddingVectorizer(tokens)
+            doc_len = len(tokens)
+            return (tokens, doc_len)
+        doc_len = len(tokens)
+        return (' '.join(tokens), doc_len)
 
-    for v, l in vals:
-        mx_doc_len = max(mx_doc_len, l)
-    vals = [v[0] for v in vals]
-    if typ == 'word2vec averaging':
-        return (np.array(vals), mx_doc_len)
 
-    df[field + '_a'] = pd.DataFrame(vals)
-    df.drop(field, axis=1, inplace=True)
-    df.rename({field + '_a': field}, axis='columns', inplace=True)
-    return (vals, mx_doc_len)
+    def getText(self, df, field):
+        cpus = multiprocessing.cpu_count()
+        p = multiprocessing.Pool(cpus)
+        mx_doc_len = 0
+        vals = list(tqdm(p.imap(self.textOperations, df[field]), total=len(df)))
+
+        for v, l in vals:
+            mx_doc_len = max(mx_doc_len, l)
+        vals = [v[0] for v in vals]
+        if self.typ == 'word2vec averaging':
+            return (np.array(vals), mx_doc_len)
+
+        df[field + '_a'] = pd.DataFrame(vals)
+        df.drop(field, axis=1, inplace=True)
+        df.rename({field + '_a': field}, axis='columns', inplace=True)
+        return (vals, mx_doc_len)
 
 
 class Embeddings:
