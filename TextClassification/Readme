@@ -2,6 +2,8 @@ This repository contains simple models for text classification using Deep Learni
 
 Note: In the following link, we can see that using default embeding in Keras, the model achieves 86% accuracy
 https://machinelearningmastery.com/predict-sentiment-movie-reviews-using-deep-learning/
+The following also uses the proposed methodology
+https://cs224d.stanford.edu/reports/SadeghianAmir.pdf
 
 1.
 
