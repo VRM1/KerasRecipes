@@ -5,6 +5,11 @@ from sklearn.model_selection import KFold, train_test_split
 from Utils import PurifyText
 import numpy as np
 from sklearn import preprocessing
+'''
+This program performs binary classification such as sentiments from a given text. 
+1. Convert the word to Word2Vec embedings after some pre-processing.
+2. For each document, average the Word2Vec to get a single D-dimensional(usually 100 or 300) vector per document. 
+'''
 if __name__  == '__main__':
 
     pth = '/home/vineeth/Documents/DataRepo/aclImdb/'
