@@ -31,6 +31,7 @@ if __name__  == '__main__':
     vals = purify.getText(df,req_fields[1])
     X,mx_doc_len = vals[0],vals[1]
     n_outputs = 1
+    # check
     Y = df[req_fields[0]].values
     kf = KFold(n_splits=folds, shuffle=True)
     kf.get_n_splits(X)
