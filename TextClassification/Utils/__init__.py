@@ -1,1 +1,1 @@
-from .PreprocessText2 import Embeddings, PurifyText
+from .PreprocessText import Embeddings, PurifyText

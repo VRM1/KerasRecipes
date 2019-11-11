@@ -20,23 +20,33 @@ import numpy as np
 import multiprocessing
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+import os
 from gensim.models import KeyedVectors
 from gensim.test.utils import get_tmpfile, datapath
 from gensim.scripts.glove2word2vec import glove2word2vec
 import logging
-
+from os.path import expanduser
+HOME = expanduser("~")
 '''
 A generic function to process all textual data
 '''
-LOAD_EMB = False
+LOAD_EMB = True
 if LOAD_EMB:
-    F_PTH = '/home/vineeth/Documents/DataRepo/PretrainedEmbeddings/'
-    FIL_A = 'Glove/glove.6B/glove.6B.300d.txt'
-    FIL_B = 'PatentToGlove-'
-    glove_file = datapath(F_PTH + FIL_A)
-    word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
-    glove2word2vec(glove_file, word2vec_glove_file)
-    WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
+
+    F_PTH = HOME+'/Documents/DataRepo/PretrainedEmbeddings/'
+    keyed_vecs = 'keyed-6B-300.bin.gz'
+    if os.path.exists(F_PTH+keyed_vecs):
+        WORD_MODEL = KeyedVectors.load_word2vec_format(F_PTH+keyed_vecs, binary=True)
+        print('loaded embedding:'+keyed_vecs)
+    else:
+        FIL_A = 'Glove/glove.6B/glove.6B.300d.txt'
+        FIL_B = 'PatentToGlove-'
+        glove_file = datapath(F_PTH + FIL_A)
+        word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
+        glove2word2vec(glove_file, word2vec_glove_file)
+        WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
+        WORD_MODEL.save_word2vec_format(F_PTH+'keyed-6B-300.bin.gz', binary=True)
+        print('loaded embedding:'+keyed_vecs)
 
 class PurifyText:
 
@@ -102,6 +112,9 @@ class Embeddings:
         self.embeddings_index = dict()
         # size of the embeddings
         self.embed_sz = 100
+        self.MAX_NB_WORDS = len(WORD_MODEL.wv.vocab)
+        self.word_vectors = WORD_MODEL.wv
+        self.nb_words = len(WORD_MODEL.wv.vocab)
         if typ == 'glove':
             self.__loadGlove()
 
@@ -109,7 +122,7 @@ class Embeddings:
 
         # we now start load the whole embedding into memory and selecting only those embeddings that correspond to our input vocabulary.
 
-        f = open(F_PTH + FIL_N)
+        f = open('glove.to.word2vec.txt')
         for line in f:
             values = line.split()
             word = values[0]
@@ -127,17 +140,19 @@ class Embeddings:
         '''
         # begin by tokenizing, integer encoding, and padding text using keras pre-processing module
         # the number of time steps is the maximum length of a document (calculated across all documents)
-        n_timesteps = mx_len
         t = Tokenizer()
         t.fit_on_texts(X)
         vocab_size = len(t.word_index) + 1
         encoded_docs = t.texts_to_sequences(X)
-        padded_docs = pad_sequences(encoded_docs, maxlen=n_timesteps, padding='post')
+        padded_docs = pad_sequences(encoded_docs, maxlen=mx_len, padding='post')
         # create a weight matrix for words in training docs
-        embedding_matrix = np.zeros((vocab_size, self.embed_sz))
+        wv_matrix = (np.random.rand(vocab_size, self.embed_sz) - 0.5) / 5.0
         for word, i in t.word_index.items():
-            embedding_vector = self.embeddings_index.get(word)
-            if embedding_vector is not None:
-                embedding_matrix[i] = embedding_vector
+            try:
+                embedding_vector = self.word_vectors[word]
+                # words not found in embedding index will be all-zeros.
+                wv_matrix[i] = embedding_vector
+            except:
+                pass
 
-        return (padded_docs, embedding_matrix, self.embed_sz, vocab_size)
+        return (padded_docs, wv_matrix, self.embed_sz, vocab_size)
