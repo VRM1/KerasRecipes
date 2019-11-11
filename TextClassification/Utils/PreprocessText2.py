@@ -28,13 +28,15 @@ import logging
 '''
 A generic function to process all textual data
 '''
-F_PTH = '/home/vineeth/Documents/DataRepo/PretrainedEmbeddings/'
-FIL_A = 'Glove/glove.6B/glove.6B.300d.txt'
-FIL_B = 'PatentToGlove-'
-glove_file = datapath(F_PTH + FIL_A)
-word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
-glove2word2vec(glove_file, word2vec_glove_file)
-WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
+LOAD_EMB = False
+if LOAD_EMB:
+    F_PTH = '/home/vineeth/Documents/DataRepo/PretrainedEmbeddings/'
+    FIL_A = 'Glove/glove.6B/glove.6B.300d.txt'
+    FIL_B = 'PatentToGlove-'
+    glove_file = datapath(F_PTH + FIL_A)
+    word2vec_glove_file = get_tmpfile('glove.to.word2vec.txt')
+    glove2word2vec(glove_file, word2vec_glove_file)
+    WORD_MODEL = KeyedVectors.load_word2vec_format(word2vec_glove_file)
 
 class PurifyText:
 
@@ -84,13 +86,13 @@ class PurifyText:
         for v, l in vals:
             mx_doc_len = max(mx_doc_len, l)
         vals = [v[0] for v in vals]
-        if self.typ == 'word2vec averaging':
-            return (np.array(vals), mx_doc_len)
+        # if self.typ == 'word2vec averaging':
+        #     return (np.array(vals), mx_doc_len)
 
-        df[field + '_a'] = pd.DataFrame(vals)
-        df.drop(field, axis=1, inplace=True)
-        df.rename({field + '_a': field}, axis='columns', inplace=True)
-        return (vals, mx_doc_len)
+        # df[field + '_a'] = pd.DataFrame(vals)
+        # df.drop(field, axis=1, inplace=True)
+        # df.rename({field + '_a': field}, axis='columns', inplace=True)
+        return (np.array(vals), mx_doc_len)
 
 
 class Embeddings:
